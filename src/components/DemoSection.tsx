@@ -68,7 +68,7 @@ const DemoSection = () => {
   return (
     <section id="demo" className="py-16 md:py-24 bg-gray-50">
       <div className="container mx-auto px-4">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold font-display mb-4">
               Try the <span className="text-gradient">AI Humanizer</span>
@@ -78,29 +78,29 @@ const DemoSection = () => {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <Card className="shadow-sm">
               <CardHeader>
-                <CardTitle className="text-lg">Input: AI Text</CardTitle>
+                <CardTitle className="text-xl">Input: AI Text</CardTitle>
               </CardHeader>
               <CardContent>
                 <Textarea 
                   placeholder="Paste your AI-generated text here..."
-                  className="h-64 resize-none"
+                  className="h-80 resize-none text-base"
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                 />
               </CardContent>
             </Card>
             
-            <Card>
+            <Card className="shadow-sm">
               <CardHeader>
-                <CardTitle className="text-lg">Output: Humanized Text</CardTitle>
+                <CardTitle className="text-xl">Output: Humanized Text</CardTitle>
               </CardHeader>
               <CardContent>
                 <Textarea 
                   placeholder="Humanized output will appear here..."
-                  className="h-64 resize-none"
+                  className="h-80 resize-none text-base"
                   value={outputText}
                   readOnly
                 />
@@ -108,18 +108,18 @@ const DemoSection = () => {
             </Card>
           </div>
           
-          <div className="mt-8 text-center">
+          <div className="mt-10 text-center">
             <Button 
               onClick={handleHumanize} 
               disabled={!inputText.trim() || isProcessing}
-              className="px-8"
+              className="px-10 py-6 text-base"
               size="lg"
             >
               {isProcessing ? "Humanizing..." : "Humanize Text"} 
-              {!isProcessing && <ArrowRight className="ml-2 h-5 w-5" />}
+              {!isProcessing && <ArrowRight className="ml-2 h-6 w-6" />}
             </Button>
             
-            <p className="mt-4 text-sm text-gray-500">
+            <p className="mt-5 text-base text-gray-500">
               Free demo limited to 300 characters. <a href="#pricing" className="text-primary underline hover:no-underline">Upgrade</a> for unlimited usage.
             </p>
           </div>
