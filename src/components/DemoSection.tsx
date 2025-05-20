@@ -68,7 +68,7 @@ const DemoSection = () => {
   return (
     <section id="demo" className="py-16 md:py-24 bg-gray-50">
       <div className="container mx-auto px-4">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold font-display mb-4">
               Try the <span className="text-gradient">AI Humanizer</span>
@@ -78,29 +78,29 @@ const DemoSection = () => {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <Card className="shadow-sm">
-              <CardHeader>
+          <div className="grid grid-cols-1 lg:grid-cols-2 overflow-hidden rounded-lg">
+            <Card className="shadow-sm border-r-0 lg:rounded-r-none">
+              <CardHeader className="pb-4">
                 <CardTitle className="text-xl">Input: AI Text</CardTitle>
               </CardHeader>
               <CardContent>
                 <Textarea 
                   placeholder="Paste your AI-generated text here..."
-                  className="h-80 resize-none text-base"
+                  className="h-96 resize-none text-base border-0 focus-visible:ring-0"
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                 />
               </CardContent>
             </Card>
             
-            <Card className="shadow-sm">
-              <CardHeader>
+            <Card className="shadow-sm border-l-0 lg:rounded-l-none">
+              <CardHeader className="pb-4">
                 <CardTitle className="text-xl">Output: Humanized Text</CardTitle>
               </CardHeader>
               <CardContent>
                 <Textarea 
                   placeholder="Humanized output will appear here..."
-                  className="h-80 resize-none text-base"
+                  className="h-96 resize-none text-base border-0 focus-visible:ring-0"
                   value={outputText}
                   readOnly
                 />
