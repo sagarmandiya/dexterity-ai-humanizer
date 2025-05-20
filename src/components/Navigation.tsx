@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -11,7 +12,9 @@ const Navigation = () => {
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         <div className="flex items-center">
           <h1 className="text-xl font-bold font-display">
-            <span className="text-gradient">AI</span> Humanizer
+            <Link to="/">
+              <span className="text-gradient">AI</span> Humanizer
+            </Link>
           </h1>
         </div>
 
@@ -26,9 +29,9 @@ const Navigation = () => {
           <a href="#testimonials" className="text-sm font-medium hover:text-primary transition-colors">
             Testimonials
           </a>
-          <a href="#pricing" className="text-sm font-medium hover:text-primary transition-colors">
+          <Link to="/pricing" className="text-sm font-medium hover:text-primary transition-colors">
             Pricing
-          </a>
+          </Link>
           <Button variant="outline" size="sm">
             Login
           </Button>
@@ -69,13 +72,13 @@ const Navigation = () => {
             >
               Testimonials
             </a>
-            <a 
-              href="#pricing" 
+            <Link
+              to="/pricing"
               className="text-sm font-medium hover:text-primary transition-colors"
               onClick={() => setIsMenuOpen(false)}
             >
               Pricing
-            </a>
+            </Link>
             <div className="flex space-x-3 pt-2">
               <Button variant="outline" size="sm" className="flex-1">
                 Login
