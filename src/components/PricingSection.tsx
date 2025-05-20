@@ -8,46 +8,49 @@ const PricingSection = () => {
     {
       name: "Free",
       price: "$0",
-      description: "Perfect for trying out the service",
+      period: "/month",
+      description: "Perfect for trying it out",
+      credits: 50,
       features: [
-        "300 characters per conversion",
-        "Standard humanization",
-        "3 conversions per day",
-        "Basic AI detection avoidance"
+        "50 credits per month",
+        "Standard humanization quality",
+        "Basic AI detection avoidance",
+        "Email support"
       ],
-      buttonText: "Get Started",
+      buttonText: "Select Plan",
       isPopular: false
     },
     {
-      name: "Pro",
-      price: "$12",
+      name: "Basic",
+      price: "$5",
       period: "/month",
-      description: "For professionals and content creators",
+      description: "Great for occasional use",
+      credits: 500,
       features: [
-        "Unlimited characters per conversion",
+        "500 credits per month",
         "Enhanced humanization quality",
-        "Unlimited conversions",
         "Advanced AI detection avoidance",
-        "Priority support",
-        "Custom tone settings"
+        "Priority email support",
+        "Tone adjustment"
       ],
-      buttonText: "Upgrade to Pro",
+      buttonText: "Select Plan",
       isPopular: true
     },
     {
-      name: "Team",
-      price: "$49",
+      name: "Pro",
+      price: "$15",
       period: "/month",
-      description: "For teams and businesses",
+      description: "For professional content creators",
+      credits: 2000,
       features: [
-        "Everything in Pro",
-        "5 team members",
-        "API access",
-        "Administrative dashboard",
-        "Custom integrations",
-        "Dedicated account manager"
+        "2000 credits per month",
+        "Premium humanization quality",
+        "Best-in-class AI detection avoidance",
+        "Priority support with 24h response",
+        "Custom tone settings",
+        "API access"
       ],
-      buttonText: "Contact Sales",
+      buttonText: "Select Plan",
       isPopular: false
     }
   ];
@@ -80,11 +83,15 @@ const PricingSection = () => {
                   <CardTitle className="text-2xl">{plan.name}</CardTitle>
                   <div className="mt-2 mb-1">
                     <span className="text-4xl font-bold">{plan.price}</span>
-                    {plan.period && <span className="text-gray-500">{plan.period}</span>}
+                    <span className="text-gray-500">{plan.period}</span>
                   </div>
                   <CardDescription>{plan.description}</CardDescription>
                 </CardHeader>
                 <CardContent>
+                  <div className="mb-5 p-3 bg-gray-50 rounded-md text-center">
+                    <span className="text-xl font-bold text-primary">{plan.credits}</span>
+                    <span className="text-gray-600"> credits per month</span>
+                  </div>
                   <ul className="space-y-3">
                     {plan.features.map((feature, i) => (
                       <li key={i} className="flex items-start gap-2">
