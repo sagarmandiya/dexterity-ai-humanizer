@@ -9,6 +9,8 @@ import Pricing from "./pages/Pricing";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import HumanizeText from "./pages/HumanizeText";
+import ProjectView from "./pages/ProjectView";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -49,6 +51,8 @@ const App = () => {
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/auth" element={user ? <Navigate to="/dashboard" /> : <Auth />} />
             <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/auth" />} />
+            <Route path="/humanize" element={user ? <HumanizeText /> : <Navigate to="/auth" />} />
+            <Route path="/project/:id" element={user ? <ProjectView /> : <Navigate to="/auth" />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
