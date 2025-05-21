@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { toast } from "@/components/ui/sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import Navigation from "@/components/Navigation";
+import Footer from "@/components/Footer";
 
 const HumanizeText = () => {
   const navigate = useNavigate();
@@ -103,91 +105,97 @@ const HumanizeText = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4">
-      <div className="container mx-auto py-8 max-w-4xl">
-        <Button 
-          variant="ghost" 
-          className="mb-6" 
-          onClick={() => navigate('/dashboard')}
-        >
-          ← Back to Dashboard
-        </Button>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">Humanize Text</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div>
-              <label htmlFor="title" className="block mb-2 text-sm font-medium">Project Title</label>
-              <Input 
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="input-text" className="block mb-2 text-sm font-medium">Input Text</label>
-              <Textarea
-                id="input-text"
-                placeholder="Paste AI-generated text here..."
-                className="min-h-[150px]"
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-              />
-              <div className="mt-2 text-right text-sm text-muted-foreground">
-                {inputText.length} characters
+    <div className="min-h-screen flex flex-col">
+      <Navigation />
+      
+      <div className="flex-1 bg-slate-50 p-4">
+        <div className="container mx-auto py-8 max-w-4xl">
+          <Button 
+            variant="ghost" 
+            className="mb-6" 
+            onClick={() => navigate('/dashboard')}
+          >
+            ← Back to Dashboard
+          </Button>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-2xl">Humanize Text</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div>
+                <label htmlFor="title" className="block mb-2 text-sm font-medium">Project Title</label>
+                <Input 
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full"
+                />
               </div>
-            </div>
-            
-            <div className="text-center">
-              <Button 
-                onClick={handleHumanize} 
-                disabled={isProcessing || !inputText.trim()}
-              >
-                {isProcessing ? "Processing..." : "Humanize"}
-              </Button>
-            </div>
-            
-            {outputText && (
-              <div className="mt-4">
-                <label htmlFor="output-text" className="block mb-2 text-sm font-medium">Humanized Text</label>
-                <Textarea 
-                  id="output-text"
-                  className="min-h-[150px] bg-slate-50"
-                  value={outputText}
-                  readOnly
+              
+              <div>
+                <label htmlFor="input-text" className="block mb-2 text-sm font-medium">Input Text</label>
+                <Textarea
+                  id="input-text"
+                  placeholder="Paste AI-generated text here..."
+                  className="min-h-[150px]"
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
                 />
                 <div className="mt-2 text-right text-sm text-muted-foreground">
-                  {outputText.length} characters
+                  {inputText.length} characters
                 </div>
               </div>
+              
+              <div className="text-center">
+                <Button 
+                  onClick={handleHumanize} 
+                  disabled={isProcessing || !inputText.trim()}
+                >
+                  {isProcessing ? "Processing..." : "Humanize"}
+                </Button>
+              </div>
+              
+              {outputText && (
+                <div className="mt-4">
+                  <label htmlFor="output-text" className="block mb-2 text-sm font-medium">Humanized Text</label>
+                  <Textarea 
+                    id="output-text"
+                    className="min-h-[150px] bg-slate-50"
+                    value={outputText}
+                    readOnly
+                  />
+                  <div className="mt-2 text-right text-sm text-muted-foreground">
+                    {outputText.length} characters
+                  </div>
+                </div>
+              )}
+            </CardContent>
+            
+            {outputText && (
+              <CardFooter className="flex justify-end gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    navigator.clipboard.writeText(outputText);
+                    toast.success("Copied to clipboard");
+                  }}
+                >
+                  Copy Text
+                </Button>
+                <Button 
+                  onClick={saveProject} 
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Saving..." : "Save Project"}
+                </Button>
+              </CardFooter>
             )}
-          </CardContent>
-          
-          {outputText && (
-            <CardFooter className="flex justify-end gap-2">
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  navigator.clipboard.writeText(outputText);
-                  toast.success("Copied to clipboard");
-                }}
-              >
-                Copy Text
-              </Button>
-              <Button 
-                onClick={saveProject} 
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Saving..." : "Save Project"}
-              </Button>
-            </CardFooter>
-          )}
-        </Card>
+          </Card>
+        </div>
       </div>
+      
+      <Footer />
     </div>
   );
 };
