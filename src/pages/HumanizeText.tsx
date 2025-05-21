@@ -72,10 +72,10 @@ const HumanizeText = () => {
           title,
           input_text: inputText,
           output_text: outputText,
-          credits_used: creditsUsed
+          credits_used: creditsUsed,
+          user_id: (await supabase.auth.getUser()).data.user?.id
         })
-        .select()
-        .single();
+        .select();
 
       if (projectError) throw projectError;
 
