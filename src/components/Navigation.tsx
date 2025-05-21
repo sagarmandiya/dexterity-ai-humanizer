@@ -1,11 +1,34 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [user, setUser] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user || null);
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user || null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleAuthAction = () => {
+    if (user) {
+      navigate("/dashboard");
+    } else {
+      navigate("/auth");
+    }
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm">
@@ -32,10 +55,15 @@ const Navigation = () => {
           <Link to="/pricing" className="text-sm font-medium hover:text-primary transition-colors">
             Pricing
           </Link>
-          <Button variant="outline" size="sm">
-            Login
-          </Button>
-          <Button size="sm">Sign Up</Button>
+          {user ? (
+            <Button onClick={handleAuthAction} size="sm">
+              Dashboard
+            </Button>
+          ) : (
+            <Button onClick={handleAuthAction} size="sm">
+              Login / Sign Up
+            </Button>
+          )}
         </nav>
 
         {/* Mobile Menu Button */}
@@ -79,12 +107,15 @@ const Navigation = () => {
             >
               Pricing
             </Link>
-            <div className="flex space-x-3 pt-2">
-              <Button variant="outline" size="sm" className="flex-1">
-                Login
-              </Button>
-              <Button size="sm" className="flex-1">
-                Sign Up
+            <div className="pt-2">
+              <Button 
+                onClick={() => {
+                  handleAuthAction();
+                  setIsMenuOpen(false);
+                }} 
+                className="w-full"
+              >
+                {user ? "Dashboard" : "Login / Sign Up"}
               </Button>
             </div>
           </nav>
