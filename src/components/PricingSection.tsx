@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const PricingSection = () => {
   const plans = [
@@ -105,8 +106,9 @@ const PricingSection = () => {
                   <Button 
                     className="w-full" 
                     variant={plan.isPopular ? "default" : "outline"}
+                    asChild
                   >
-                    {plan.buttonText}
+                    <Link to="/pricing">{plan.buttonText}</Link>
                   </Button>
                 </CardFooter>
               </Card>
