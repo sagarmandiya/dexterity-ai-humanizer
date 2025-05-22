@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,14 +33,13 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [projects, setProjects] = useState<Project[]>([]);
   const [credits, setCredits] = useState<number>(0);
-  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
 
   const fetchProjects = async () => {
     const { data: projectsData, error: projectsError } = await supabase
-      .from('projects')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
+      .from("projects")
+      .select("*")
+      .order("created_at", { ascending: false });
+
     if (projectsError) {
       console.error("Error fetching projects:", projectsError);
     } else if (projectsData) {
@@ -52,37 +50,34 @@ const Dashboard = () => {
   useEffect(() => {
     const checkUser = async () => {
       const { data, error } = await supabase.auth.getSession();
-      
+
       if (error || !data.session) {
         navigate("/auth");
         return;
       }
-      
+
       setUserEmail(data.session.user.email);
-      
-      // Fetch user credits
+
       const { data: creditsData, error: creditsError } = await supabase
-        .from('user_credits')
-        .select('credits')
+        .from("user_credits")
+        .select("credits")
         .single();
-      
+
       if (creditsError) {
         console.error("Error fetching credits:", creditsError);
       } else if (creditsData) {
         setCredits(creditsData.credits);
       }
-      
+
       await fetchProjects();
-      
+
       setIsLoading(false);
     };
-    
+
     checkUser();
-    
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_OUT") {
-        navigate("/auth");
-      } else if (!session) {
+      if (event === "SIGNED_OUT" || !session) {
         navigate("/auth");
       } else {
         setUserEmail(session.user.email);
@@ -101,27 +96,17 @@ const Dashboard = () => {
     navigate("/humanize");
   };
 
-  const deleteProject = async () => {
-    if (!projectToDelete) return;
-    
+  const deleteProject = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('projects')
-        .delete()
-        .eq('id', projectToDelete);
-      
-      if (error) {
-        throw error;
-      }
-      
-      // Update projects list
-      setProjects(projects.filter(project => project.id !== projectToDelete));
+      const { error } = await supabase.from("projects").delete().eq("id", id);
+
+      if (error) throw error;
+
+      setProjects((prev) => prev.filter((project) => project.id !== id));
       toast.success("Project deleted successfully");
     } catch (error: any) {
       console.error("Error deleting project:", error);
       toast.error("Failed to delete project");
-    } finally {
-      setProjectToDelete(null);
     }
   };
 
@@ -140,19 +125,17 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Navigation />
-      
+
       <div className="flex-1 bg-slate-50 p-4 pt-24">
         <div className="container mx-auto py-8">
           <div className="flex flex-col gap-6 max-w-5xl mx-auto">
-            {/* Header with logout button */}
             <div className="flex items-center justify-between">
               <h1 className="text-3xl font-bold">Dashboard</h1>
               <Button onClick={handleLogout} variant="outline">
                 Log out
               </Button>
             </div>
-            
-            {/* User info and credits card */}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
@@ -174,7 +157,7 @@ const Dashboard = () => {
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardHeader>
                   <CardTitle className="text-xl">Humanize Text</CardTitle>
@@ -190,8 +173,7 @@ const Dashboard = () => {
                 </CardContent>
               </Card>
             </div>
-            
-            {/* Projects history */}
+
             <Card>
               <CardHeader>
                 <CardTitle className="text-xl">Recent Projects</CardTitle>
@@ -215,7 +197,10 @@ const Dashboard = () => {
                     <TableBody>
                       {projects.map((project) => (
                         <TableRow key={project.id}>
-                          <TableCell className="font-medium cursor-pointer hover:underline" onClick={() => navigate(`/project/${project.id}`)}>
+                          <TableCell
+                            className="font-medium cursor-pointer hover:underline"
+                            onClick={() => navigate(`/project/${project.id}`)}
+                          >
                             {project.title}
                           </TableCell>
                           <TableCell>{formatDate(project.created_at)}</TableCell>
@@ -223,8 +208,8 @@ const Dashboard = () => {
                           <TableCell className="text-right">
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button 
-                                  variant="ghost" 
+                                <Button
+                                  variant="ghost"
                                   size="sm"
                                   onClick={(e) => e.stopPropagation()}
                                   className="text-red-500 hover:text-red-700 hover:bg-red-50"
@@ -244,12 +229,9 @@ const Dashboard = () => {
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction 
+                                  <AlertDialogAction
                                     className="bg-red-500 hover:bg-red-600"
-                                    onClick={() => {
-                                      setProjectToDelete(project.id);
-                                      deleteProject();
-                                    }}
+                                    onClick={() => deleteProject(project.id)}
                                   >
                                     Delete
                                   </AlertDialogAction>
@@ -267,7 +249,7 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-      
+
       <Footer />
     </div>
   );
