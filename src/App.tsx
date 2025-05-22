@@ -9,7 +9,7 @@ import Pricing from "./pages/Pricing";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
-import HumanizeText from "./pages/HumanizeText";
+import HumanizeText from "./pages/HumanizeText"; 
 import ProjectView from "./pages/ProjectView";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
