@@ -6,9 +6,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/components/ui/sonner";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { Plus, CreditCard } from "lucide-react";
+import { Plus, CreditCard, Trash2, AlertCircle } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface Project {
   id: string;
@@ -23,6 +34,20 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [projects, setProjects] = useState<Project[]>([]);
   const [credits, setCredits] = useState<number>(0);
+  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
+
+  const fetchProjects = async () => {
+    const { data: projectsData, error: projectsError } = await supabase
+      .from('projects')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (projectsError) {
+      console.error("Error fetching projects:", projectsError);
+    } else if (projectsData) {
+      setProjects(projectsData);
+    }
+  };
 
   useEffect(() => {
     const checkUser = async () => {
@@ -47,17 +72,7 @@ const Dashboard = () => {
         setCredits(creditsData.credits);
       }
       
-      // Fetch user projects
-      const { data: projectsData, error: projectsError } = await supabase
-        .from('projects')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (projectsError) {
-        console.error("Error fetching projects:", projectsError);
-      } else if (projectsData) {
-        setProjects(projectsData);
-      }
+      await fetchProjects();
       
       setIsLoading(false);
     };
@@ -84,6 +99,30 @@ const Dashboard = () => {
 
   const startNewProject = () => {
     navigate("/humanize");
+  };
+
+  const deleteProject = async () => {
+    if (!projectToDelete) return;
+    
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', projectToDelete);
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Update projects list
+      setProjects(projects.filter(project => project.id !== projectToDelete));
+      toast.success("Project deleted successfully");
+    } catch (error: any) {
+      console.error("Error deleting project:", error);
+      toast.error("Failed to delete project");
+    } finally {
+      setProjectToDelete(null);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -169,15 +208,55 @@ const Dashboard = () => {
                       <TableRow>
                         <TableHead>Title</TableHead>
                         <TableHead>Date</TableHead>
-                        <TableHead className="text-right">Credits Used</TableHead>
+                        <TableHead>Credits Used</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {projects.map((project) => (
-                        <TableRow key={project.id} className="cursor-pointer hover:bg-slate-100" onClick={() => navigate(`/project/${project.id}`)}>
-                          <TableCell className="font-medium">{project.title}</TableCell>
+                        <TableRow key={project.id}>
+                          <TableCell className="font-medium cursor-pointer hover:underline" onClick={() => navigate(`/project/${project.id}`)}>
+                            {project.title}
+                          </TableCell>
                           <TableCell>{formatDate(project.created_at)}</TableCell>
-                          <TableCell className="text-right">{project.credits_used}</TableCell>
+                          <TableCell>{project.credits_used}</TableCell>
+                          <TableCell className="text-right">
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle className="flex items-center gap-2">
+                                    <AlertCircle className="h-5 w-5 text-red-500" />
+                                    Delete Project
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete "{project.title}"? This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction 
+                                    className="bg-red-500 hover:bg-red-600"
+                                    onClick={() => {
+                                      setProjectToDelete(project.id);
+                                      deleteProject();
+                                    }}
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
