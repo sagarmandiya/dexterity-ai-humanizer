@@ -43,11 +43,11 @@ const Navigation = () => {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-6">
-          <a href="#features" className="text-sm font-medium hover:text-primary transition-colors">
-            Features
-          </a>
           <a href="#demo" className="text-sm font-medium hover:text-primary transition-colors">
             Try It
+          </a>
+          <a href="#features" className="text-sm font-medium hover:text-primary transition-colors">
+            Features
           </a>
           <a href="#testimonials" className="text-sm font-medium hover:text-primary transition-colors">
             Testimonials
@@ -80,18 +80,18 @@ const Navigation = () => {
         <div className="md:hidden bg-white border-t">
           <nav className="container mx-auto px-4 py-4 flex flex-col space-y-4">
             <a 
-              href="#features" 
-              className="text-sm font-medium hover:text-primary transition-colors"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Features
-            </a>
-            <a 
               href="#demo" 
               className="text-sm font-medium hover:text-primary transition-colors"
               onClick={() => setIsMenuOpen(false)}
             >
               Try It
+            </a>
+            <a 
+              href="#features" 
+              className="text-sm font-medium hover:text-primary transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Features
             </a>
             <a 
               href="#testimonials" 
