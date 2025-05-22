@@ -1,4 +1,3 @@
-// File: DemoSection.tsx
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,7 @@ import { ArrowRight } from "lucide-react";
 
 const API_KEY = import.meta.env.VITE_UNDETECTABLE_API_KEY;
 const USER_ID = import.meta.env.VITE_UNDETECTABLE_USER_ID;
+const CHARACTER_LIMIT = 300;
 
 const DemoSection = () => {
   const [inputText, setInputText] = useState("");
@@ -38,6 +38,15 @@ const DemoSection = () => {
     }
   };
 
+  const handleInputChange = (e) => {
+    const text = e.target.value;
+    if (text.length > CHARACTER_LIMIT) {
+      setInputText(text.substring(0, CHARACTER_LIMIT));
+    } else {
+      setInputText(text);
+    }
+  };
+
   const handleHumanize = async () => {
     if (!inputText.trim()) {
       toast({ title: "Please enter some text." });
@@ -49,8 +58,8 @@ const DemoSection = () => {
       return;
     }
 
-    if (inputText.length > 300) {
-      toast({ title: "Character limit exceeded.", description: "Free demo limited to 300 characters." });
+    if (inputText.length > CHARACTER_LIMIT) {
+      toast({ title: "Character limit exceeded.", description: `Free demo limited to ${CHARACTER_LIMIT} characters.` });
       return;
     }
 
@@ -151,11 +160,11 @@ const DemoSection = () => {
                   placeholder="Paste your AI-generated text here..."
                   className="h-96 resize-none text-base border-0 focus-visible:ring-0"
                   value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
-                  maxLength={300}
+                  onChange={handleInputChange}
+                  maxLength={CHARACTER_LIMIT}
                 />
                 <div className="text-right text-sm text-gray-500 mt-1">
-                  {inputText.length}/300 characters
+                  {inputText.length}/{CHARACTER_LIMIT} characters
                 </div>
               </CardContent>
             </Card>
@@ -185,17 +194,9 @@ const DemoSection = () => {
               {isProcessing ? "Humanizing..." : "Humanize Text"}
               {!isProcessing && <ArrowRight className="ml-2 h-6 w-6" />}
             </Button>
-            {/* <Button
-              onClick={checkCredits}
-              variant="outline"
-              className="ml-4 px-10 py-6 text-base"
-              size="lg"
-            >
-              Check Credits
-            </Button> */}
 
             <p className="mt-5 text-base text-gray-500">
-              Free demo limited to 300 characters. <a href="#pricing" className="text-primary underline hover:no-underline">Upgrade</a> for unlimited usage.
+              Free demo limited to {CHARACTER_LIMIT} characters. <a href="#pricing" className="text-primary underline hover:no-underline">Upgrade</a> for unlimited usage.
             </p>
           </div>
         </div>

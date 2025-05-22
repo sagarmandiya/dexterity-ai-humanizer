@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const API_KEY = import.meta.env.VITE_UNDETECTABLE_API_KEY;
 const USER_ID = import.meta.env.VITE_UNDETECTABLE_USER_ID;
@@ -19,10 +22,45 @@ const HumanizeText = () => {
   const [outputText, setOutputText] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [userCredits, setUserCredits] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [maxCharacters, setMaxCharacters] = useState(null);
 
   useEffect(() => {
+    const fetchUserCredits = async () => {
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('user_credits')
+          .select('credits')
+          .single();
+
+        if (error) throw error;
+        
+        setUserCredits(data.credits);
+        // Set max characters based on credits
+        setMaxCharacters(data.credits <= 0 ? 300 : null);
+      } catch (error) {
+        console.error("Error fetching user credits:", error);
+        toast.error("Failed to fetch user credits");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserCredits();
     setTimeout(() => setInputText(""), 0);
   }, []);
+
+  const handleInputChange = (e) => {
+    const text = e.target.value;
+    if (maxCharacters !== null && text.length > maxCharacters) {
+      // Truncate text to max characters
+      setInputText(text.substring(0, maxCharacters));
+    } else {
+      setInputText(text);
+    }
+  };
 
   const handleHumanize = async () => {
     if (!inputText.trim()) {
@@ -123,6 +161,12 @@ const HumanizeText = () => {
     try {
       const creditsUsed = Math.max(1, Math.floor(inputText.length / 100));
 
+      if (userCredits < creditsUsed) {
+        toast.error("You don't have enough credits to save this project.");
+        setIsSubmitting(false);
+        return;
+      }
+
       const { data: projectData, error: projectError } = await supabase
         .from('projects')
         .insert({
@@ -145,6 +189,15 @@ const HumanizeText = () => {
         console.error("Failed to update credits:", creditError);
         toast.error("Project saved but failed to update credits.");
       } else {
+        // Update local credits state
+        setUserCredits(prevCredits => {
+          const newCredits = Math.max(0, prevCredits - creditsUsed);
+          // Update max characters if credits are now zero
+          if (newCredits <= 0) {
+            setMaxCharacters(300);
+          }
+          return newCredits;
+        });
         toast.success("Project saved successfully!");
       }
 
@@ -156,6 +209,22 @@ const HumanizeText = () => {
       setIsSubmitting(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navigation />
+        <div className="flex-1 bg-slate-50 p-4">
+          <div className="container mx-auto py-8 max-w-4xl">
+            <div className="flex items-center justify-center h-64">
+              <p>Loading...</p>
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -170,6 +239,15 @@ const HumanizeText = () => {
               <CardTitle className="text-2xl">Humanize Text</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
+              {maxCharacters === 300 && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    You're out of credits! Input is limited to 300 characters. 
+                    <a href="/pricing" className="ml-1 underline">Upgrade your plan</a> to remove this limitation.
+                  </AlertDescription>
+                </Alert>
+              )}
               <div>
                 <label htmlFor="title" className="block mb-2 text-sm font-medium">Project Title</label>
                 <Input
@@ -180,16 +258,19 @@ const HumanizeText = () => {
                 />
               </div>
               <div>
-                <label htmlFor="input-text" className="block mb-2 text-sm font-medium">Input Text</label>
+                <label htmlFor="input-text" className="block mb-2 text-sm font-medium">
+                  Input Text {maxCharacters !== null && `(Limited to ${maxCharacters} characters)`}
+                </label>
                 <Textarea
                   id="input-text"
                   placeholder="Paste AI-generated text here..."
                   className="min-h-[150px]"
                   value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
+                  onChange={handleInputChange}
+                  maxLength={maxCharacters}
                 />
                 <div className="mt-2 text-right text-sm text-muted-foreground">
-                  {inputText.length} characters
+                  {inputText.length} {maxCharacters !== null && `/ ${maxCharacters}`} characters
                 </div>
               </div>
               <div className="text-center">
