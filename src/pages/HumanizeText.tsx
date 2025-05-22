@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -10,6 +9,9 @@ import { Input } from "@/components/ui/input";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 
+const API_KEY = import.meta.env.VITE_UNDETECTABLE_API_KEY;
+const USER_ID = import.meta.env.VITE_UNDETECTABLE_USER_ID;
+
 const HumanizeText = () => {
   const navigate = useNavigate();
   const [title, setTitle] = useState("Untitled Project");
@@ -18,39 +20,94 @@ const HumanizeText = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  useEffect(() => {
+    setTimeout(() => setInputText(""), 0);
+  }, []);
+
   const handleHumanize = async () => {
-    // Simple validation
     if (!inputText.trim()) {
       toast.error("Please enter some text to humanize.");
       return;
     }
 
+    if (inputText.length < 50) {
+      toast.error("Please enter at least 50 characters.");
+      return;
+    }
+
     setIsProcessing(true);
 
+    // Temporary Mock API Call
     try {
-      // In a real app, this would call an AI humanization service
-      // For now, we'll just simulate it with a simple transformation
-      setTimeout(() => {
-        // This is a placeholder implementation - in a real app this would use a proper AI service
-        const humanized = inputText
-          .split(".")
-          .map(sentence => {
-            // Add some variation to sentence structure
-            if (Math.random() > 0.7 && sentence.length > 10) {
-              return sentence + ", don't you think?";
-            }
-            return sentence;
-          })
-          .join(".")
-          .replace(/AI/gi, "artificial intelligence")
-          .replace(/algorithm/gi, "process")
-          .replace(/automated/gi, "carefully crafted");
-          
-        setOutputText(humanized);
-        setIsProcessing(false);
-      }, 1500);
-    } catch (error) {
-      toast.error("Failed to humanize text. Please try again.");
+      // TEMPORARY MOCKED OUTPUT
+      const simulatedOutput = inputText
+        .replace(/AI/gi, "artificial intelligence")
+        .replace(/algorithm/gi, "process")
+        .replace(/automated/gi, "carefully crafted")
+        .replace(/\./g, ". Actually,");
+
+      await new Promise((res) => setTimeout(res, 1200));
+      setOutputText(simulatedOutput);
+    
+    // Uncomment for actual API call
+    // try {
+    //   const response = await fetch("https://humanize.undetectable.ai/submit", {
+    //     method: "POST",
+    //     headers: {
+    //       "Content-Type": "application/json",
+    //       apikey: API_KEY,
+    //       user_id: USER_ID
+    //     },
+    //     body: JSON.stringify({
+    //       content: inputText,
+    //       readability: "High School",
+    //       purpose: "Essay",
+    //       strength: "More Human",
+    //       model: "v11"
+    //     }),
+    //   });
+
+    //   const data = await response.json();
+
+    //   if (!response.ok) {
+    //     console.error("🔴 API Error:", response.status, data);
+    //     if (data.error === "Insufficient credits") {
+    //       toast.error("You're out of credits. Please upgrade your plan.");
+    //       return;
+    //     }
+    //     throw new Error(data.message || "Submission failed");
+    //   }
+
+    //   if (!data.id) throw new Error("Submission failed");
+
+    //   let retries = 10;
+    //   let output = "";
+    //   while (retries-- > 0) {
+    //     const check = await fetch("https://humanize.undetectable.ai/document", {
+    //       method: "POST",
+    //       headers: {
+    //         "Content-Type": "application/json",
+    //         apikey: API_KEY,
+    //         user_id: USER_ID
+    //       },
+    //       body: JSON.stringify({ id: data.id }),
+    //     });
+
+    //     const checkData = await check.json();
+    //     if (checkData.output) {
+    //       output = checkData.output;
+    //       break;
+    //     }
+    //     await new Promise((res) => setTimeout(res, 1000));
+    //   }
+
+    //   if (!output) throw new Error("Humanization failed to complete in time.");
+
+    //   setOutputText(output);
+    } catch (error: any) {
+      console.error("Humanize error:", error);
+      toast.error(error.message || "Failed to humanize text.");
+    } finally {
       setIsProcessing(false);
     }
   };
@@ -64,10 +121,8 @@ const HumanizeText = () => {
     setIsSubmitting(true);
 
     try {
-      // Calculate credits used (simplified - in a real app this would depend on text length/complexity)
       const creditsUsed = Math.max(1, Math.floor(inputText.length / 100));
 
-      // Insert the project
       const { data: projectData, error: projectError } = await supabase
         .from('projects')
         .insert({
@@ -81,14 +136,12 @@ const HumanizeText = () => {
 
       if (projectError) throw projectError;
 
-      // Update user credits
       const { error: creditError } = await supabase.rpc(
         'decrement_user_credits',
         { amount: creditsUsed }
       );
 
       if (creditError) {
-        // If credits update fails, we should handle this better in a real app
         console.error("Failed to update credits:", creditError);
         toast.error("Project saved but failed to update credits.");
       } else {
@@ -107,17 +160,11 @@ const HumanizeText = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Navigation />
-      
       <div className="flex-1 bg-slate-50 p-4">
         <div className="container mx-auto py-8 max-w-4xl">
-          <Button 
-            variant="ghost" 
-            className="mb-6" 
-            onClick={() => navigate('/dashboard')}
-          >
+          <Button variant="ghost" className="mb-6" onClick={() => navigate('/dashboard')}>
             ← Back to Dashboard
           </Button>
-          
           <Card>
             <CardHeader>
               <CardTitle className="text-2xl">Humanize Text</CardTitle>
@@ -125,14 +172,13 @@ const HumanizeText = () => {
             <CardContent className="space-y-6">
               <div>
                 <label htmlFor="title" className="block mb-2 text-sm font-medium">Project Title</label>
-                <Input 
+                <Input
                   id="title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="w-full"
                 />
               </div>
-              
               <div>
                 <label htmlFor="input-text" className="block mb-2 text-sm font-medium">Input Text</label>
                 <Textarea
@@ -146,20 +192,18 @@ const HumanizeText = () => {
                   {inputText.length} characters
                 </div>
               </div>
-              
               <div className="text-center">
-                <Button 
-                  onClick={handleHumanize} 
+                <Button
+                  onClick={handleHumanize}
                   disabled={isProcessing || !inputText.trim()}
                 >
                   {isProcessing ? "Processing..." : "Humanize"}
                 </Button>
               </div>
-              
               {outputText && (
                 <div className="mt-4">
                   <label htmlFor="output-text" className="block mb-2 text-sm font-medium">Humanized Text</label>
-                  <Textarea 
+                  <Textarea
                     id="output-text"
                     className="min-h-[150px] bg-slate-50"
                     value={outputText}
@@ -171,11 +215,10 @@ const HumanizeText = () => {
                 </div>
               )}
             </CardContent>
-            
             {outputText && (
               <CardFooter className="flex justify-end gap-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => {
                     navigator.clipboard.writeText(outputText);
                     toast.success("Copied to clipboard");
@@ -183,8 +226,8 @@ const HumanizeText = () => {
                 >
                   Copy Text
                 </Button>
-                <Button 
-                  onClick={saveProject} 
+                <Button
+                  onClick={saveProject}
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? "Saving..." : "Save Project"}
@@ -194,7 +237,6 @@ const HumanizeText = () => {
           </Card>
         </div>
       </div>
-      
       <Footer />
     </div>
   );
