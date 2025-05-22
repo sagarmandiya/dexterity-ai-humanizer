@@ -1,10 +1,43 @@
 
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle } from "lucide-react";
-import { Link } from "react-router-dom";
+import { CheckCircle, LogIn } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const PricingSection = () => {
+  const [user, setUser] = useState<any>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user || null);
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user || null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handlePlanSelect = (plan: any) => {
+    if (!user) {
+      // User is not logged in, redirect to auth page
+      navigate("/auth");
+    } else {
+      // User is logged in, proceed to payment page
+      navigate("/payment", { 
+        state: { 
+          plan: plan.name, 
+          price: plan.price,
+          credits: plan.credits 
+        } 
+      });
+    }
+  };
+
   const plans = [
     {
       name: "Free",
@@ -106,9 +139,9 @@ const PricingSection = () => {
                   <Button 
                     className="w-full" 
                     variant={plan.isPopular ? "default" : "outline"}
-                    asChild
+                    onClick={() => handlePlanSelect(plan)}
                   >
-                    <Link to="/pricing">{plan.buttonText}</Link>
+                    {plan.buttonText}
                   </Button>
                 </CardFooter>
               </Card>

@@ -1,11 +1,45 @@
 
+import { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, LogIn, UserPlus } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Pricing = () => {
+  const [user, setUser] = useState<any>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user || null);
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user || null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handlePlanSelect = (plan: any) => {
+    if (!user) {
+      // User is not logged in, redirect to auth page
+      navigate("/auth");
+    } else {
+      // User is logged in, proceed to payment page
+      navigate("/payment", { 
+        state: { 
+          plan: plan.name, 
+          price: plan.price,
+          credits: plan.credits 
+        } 
+      });
+    }
+  };
+
   const pricingPlans = [
     {
       name: "Free",
@@ -61,7 +95,7 @@ const Pricing = () => {
     <div className="min-h-screen flex flex-col">
       <Navigation />
       
-      <main className="flex-1">
+      <main className="flex-1 pt-24">
         <section className="py-16 md:py-24">
           <div className="container mx-auto px-4">
             <div className="max-w-5xl mx-auto">
@@ -72,6 +106,19 @@ const Pricing = () => {
                 <p className="text-lg text-gray-600 max-w-2xl mx-auto">
                   Choose the plan that works best for your needs with no hidden fees.
                 </p>
+                
+                {!user && (
+                  <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
+                    <Button className="flex items-center gap-2" onClick={() => navigate("/auth")}>
+                      <LogIn className="h-4 w-4" />
+                      <span>Log in to your account</span>
+                    </Button>
+                    <Button variant="outline" className="flex items-center gap-2" onClick={() => navigate("/auth?signup=true")}>
+                      <UserPlus className="h-4 w-4" />
+                      <span>Sign up for free</span>
+                    </Button>
+                  </div>
+                )}
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -111,6 +158,7 @@ const Pricing = () => {
                       <Button 
                         className="w-full" 
                         variant={plan.isPopular ? "default" : "outline"}
+                        onClick={() => handlePlanSelect(plan)}
                       >
                         {plan.buttonText}
                       </Button>
