@@ -12,6 +12,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "@/components/ui/sonner";
 import { Eye, EyeOff } from "lucide-react";
+import Navigation from "@/components/Navigation";
 
 const AuthPage = () => {
   const navigate = useNavigate();
@@ -70,6 +71,7 @@ const AuthPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
+      <Navigation />
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-display">
@@ -170,6 +172,7 @@ const AuthPage = () => {
           )}
         </CardFooter>
       </Card>
+      
     </div>
   );
 };
