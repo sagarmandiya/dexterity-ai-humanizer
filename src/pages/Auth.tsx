@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -33,35 +33,77 @@ const AuthPage = () => {
     },
   });
 
+  // Check for existing session on component mount
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate("/dashboard");
+      }
+    };
+    
+    checkSession();
+  }, [navigate]);
+
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     try {
       if (isLogin) {
         // Login
-        const { error } = await supabase.auth.signInWithPassword({
+        const { error, data: authData } = await supabase.auth.signInWithPassword({
           email: data.email,
           password: data.password,
         });
 
         if (error) throw error;
+        
+        // Ensure user_credits record exists
+        await ensureUserCredits(authData.user.id);
         
         toast.success("Login successful");
         navigate("/dashboard");
       } else {
         // Signup
-        const { error } = await supabase.auth.signUp({
+        const { error, data: authData } = await supabase.auth.signUp({
           email: data.email,
           password: data.password,
         });
 
         if (error) throw error;
         
-        toast.success("Sign-up successful! Please check your email to verify your account.");
+        if (authData.user) {
+          // Ensure user_credits record exists for new user
+          await ensureUserCredits(authData.user.id);
+          toast.success("Sign-up successful! Please check your email to verify your account.");
+        } else {
+          toast.success("Sign-up successful! Please check your email to verify your account.");
+        }
       }
     } catch (error: any) {
       toast.error(error.message || "An error occurred");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Ensure user has a credits record
+  const ensureUserCredits = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_credits')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+        
+      if (error || !data) {
+        // If no record exists, create one with default credits
+        await supabase.from('user_credits').insert({
+          user_id: userId,
+          credits: 50
+        });
+      }
+    } catch (error) {
+      console.error("Error ensuring user credits:", error);
     }
   };
 
