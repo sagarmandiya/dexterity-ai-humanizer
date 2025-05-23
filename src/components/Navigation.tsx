@@ -48,27 +48,34 @@ const Navigation = () => {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-6">
-          <a href="#demo" className="text-sm font-medium hover:text-primary transition-colors">
-            Try It
-          </a>
-          <a href="#features" className="text-sm font-medium hover:text-primary transition-colors">
-            Features
-          </a>
-          <a href="#testimonials" className="text-sm font-medium hover:text-primary transition-colors">
-            Testimonials
-          </a>
-          <Link to="/pricing" className="text-sm font-medium hover:text-primary transition-colors">
-            Pricing
-          </Link>
+          {!user && (
+            <>
+              <a href="#demo" className="text-sm font-medium hover:text-primary transition-colors">
+                Try It
+              </a>
+              <a href="#features" className="text-sm font-medium hover:text-primary transition-colors">
+                Features
+              </a>
+              <a href="#testimonials" className="text-sm font-medium hover:text-primary transition-colors">
+                Testimonials
+              </a>
+              <a href="#pricing" className="text-sm font-medium hover:text-primary transition-colors">
+                Pricing
+              </a>
+            </>
+          )}
           
           {user ? (
             <>
+              <Link to="/pricing" className="text-sm font-medium hover:text-primary transition-colors">
+                Plans
+              </Link>
               <Link to="/humanize" className="text-sm font-medium hover:text-primary transition-colors">
                 Humanize Text
               </Link>
               <div className="flex items-center gap-4">
                 <Link to="/dashboard" className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors">
-                  <User className="h-4 w-4" />
+                  {/* <User className="h-4 w-4" /> */}
                   Dashboard
                 </Link>
                 <Button onClick={handleLogout} variant="outline" size="sm">
@@ -97,33 +104,38 @@ const Navigation = () => {
       {isMenuOpen && (
         <div className="md:hidden bg-white border-t">
           <nav className="container mx-auto px-4 py-4 flex flex-col space-y-4">
-            <a 
-              href="#demo" 
-              className="text-sm font-medium hover:text-primary transition-colors"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Try It
-            </a>
-            <a 
-              href="#features" 
-              className="text-sm font-medium hover:text-primary transition-colors"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Features
-            </a>
-            <a 
-              href="#testimonials" 
-              className="text-sm font-medium hover:text-primary transition-colors"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Testimonials
-            </a>
+            {!user && (
+              <>
+                <a
+                  href="#demo"
+                  className="text-sm font-medium hover:text-primary transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Try It
+                </a>
+                <a
+                  href="#features"
+                  className="text-sm font-medium hover:text-primary transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Features
+                </a>
+                <a
+                  href="#testimonials"
+                  className="text-sm font-medium hover:text-primary transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Testimonials
+                </a>
+              </>
+            )}
+
             <Link
               to="/pricing"
               className="text-sm font-medium hover:text-primary transition-colors"
               onClick={() => setIsMenuOpen(false)}
             >
-              Pricing
+              Plans
             </Link>
             
             {user ? (
