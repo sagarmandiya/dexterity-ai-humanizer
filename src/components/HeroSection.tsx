@@ -18,7 +18,15 @@ const HeroSection = () => {
               Try Humanizer
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-            <Button size="lg" variant="outline" className="text-base font-medium px-8">
+            {/* <Button size="lg" variant="outline" className="text-base font-medium px-8">
+              Learn More
+            </Button> */}
+            <Button
+              size="lg"
+              variant="outline"
+              className="text-base font-medium px-8"
+              onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
+            >
               Learn More
             </Button>
           </div>
