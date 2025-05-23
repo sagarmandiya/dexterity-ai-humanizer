@@ -48,10 +48,10 @@ const DemoSection = () => {
       return;
     }
 
-    if (!API_KEY || !USER_ID) {
-      toast({ title: "API credentials missing." });
-      return;
-    }
+    // if (!API_KEY || !USER_ID) {
+    //   toast({ title: "API credentials missing." });
+    //   return;
+    // }
 
     setIsProcessing(true);
     setOutputText("");
