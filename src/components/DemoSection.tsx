@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,6 +7,7 @@ import { ArrowRight } from "lucide-react";
 
 const API_KEY = import.meta.env.VITE_UNDETECTABLE_API_KEY;
 const USER_ID = import.meta.env.VITE_UNDETECTABLE_USER_ID;
+const USE_API = import.meta.env.VITE_USE_API;
 const CHARACTER_LIMIT = 300;
 
 const DemoSection = () => {
@@ -19,24 +19,6 @@ const DemoSection = () => {
   useEffect(() => {
     setTimeout(() => setInputText(""), 0);
   }, []);
-
-  const checkCredits = async () => {
-    try {
-      const res = await fetch("https://humanize.undetectable.ai/check-user-credits", {
-        method: "GET",
-        headers: {
-          apikey: API_KEY,
-          user_id: USER_ID,
-        },
-      });
-      const data = await res.json();
-      console.log("🔎 Current Credits:", data);
-      toast({ title: `Remaining credits: ${data.credits}` });
-    } catch (error) {
-      console.error("Failed to check credits:", error);
-      toast({ title: "Error", description: "Unable to fetch credit balance." });
-    }
-  };
 
   const handleInputChange = (e) => {
     const text = e.target.value;
@@ -59,7 +41,10 @@ const DemoSection = () => {
     }
 
     if (inputText.length > CHARACTER_LIMIT) {
-      toast({ title: "Character limit exceeded.", description: `Free demo limited to ${CHARACTER_LIMIT} characters.` });
+      toast({
+        title: "Character limit exceeded.",
+        description: `Free demo limited to ${CHARACTER_LIMIT} characters.`,
+      });
       return;
     }
 
@@ -72,63 +57,79 @@ const DemoSection = () => {
     setOutputText("");
 
     try {
-      const submitRes = await fetch("https://humanize.undetectable.ai/submit", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: API_KEY,
-          user_id: USER_ID,
-        },
-        body: JSON.stringify({
-          content: inputText,
-          readability: "High School",
-          purpose: "Essay",
-          strength: "More Human",
-          model: "v2"
-        }),
-      });
-
-      const submitData = await submitRes.json();
-      if (!submitRes.ok) {
-        console.error("📛 API Error:", submitRes.status, submitData);
-        if (submitData.error === "Insufficient credits") {
-          toast({
-            title: "You're out of credits!",
-            description: "Please upgrade your plan or wait for your quota to refresh.",
-          });
-          return;
-        }
-        throw new Error(submitData.message || "Submission failed");
-      }
-
-      if (!submitData.id) throw new Error("Submission failed");
-
-      const retries = 10;
-      const delay = 1000;
-      for (let i = 0; i < retries; i++) {
-        const pollRes = await fetch("https://humanize.undetectable.ai/document", {
+      if (USE_API === "true") {
+        const submitRes = await fetch("https://humanize.undetectable.ai/submit", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             apikey: API_KEY,
             user_id: USER_ID,
           },
-          body: JSON.stringify({ id: submitData.id }),
+          body: JSON.stringify({
+            content: inputText,
+            readability: "High School",
+            purpose: "Essay",
+            strength: "More Human",
+            model: "v2",
+          }),
         });
 
-        const pollData = await pollRes.json();
-        if (pollData.output) {
-          setOutputText(pollData.output);
-          toast({
-            title: "Text humanized successfully!",
-            description: "Your AI-generated text now sounds more natural.",
-          });
-          return;
+        const submitData = await submitRes.json();
+        if (!submitRes.ok) {
+          console.error("📛 API Error:", submitRes.status, submitData);
+          if (submitData.error === "Insufficient credits") {
+            toast({
+              title: "You're out of credits!",
+              description: "Please upgrade your plan or wait for your quota to refresh.",
+            });
+            return;
+          }
+          throw new Error(submitData.message || "Submission failed");
         }
-        await new Promise(res => setTimeout(res, delay));
-      }
 
-      throw new Error("Humanization timed out.");
+        if (!submitData.id) throw new Error("Submission failed");
+
+        const retries = 10;
+        const delay = 1000;
+        for (let i = 0; i < retries; i++) {
+          const pollRes = await fetch("https://humanize.undetectable.ai/document", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: API_KEY,
+              user_id: USER_ID,
+            },
+            body: JSON.stringify({ id: submitData.id }),
+          });
+
+          const pollData = await pollRes.json();
+          if (pollData.output) {
+            setOutputText(pollData.output);
+            toast({
+              title: "Text humanized successfully!",
+              description: "Your AI-generated text now sounds more natural.",
+            });
+            return;
+          }
+          await new Promise((res) => setTimeout(res, delay));
+        }
+
+        throw new Error("Humanization timed out.");
+      } else {
+        // Simulated local output
+        const simulatedOutput = inputText
+          .replace(/AI/gi, "artificial intelligence")
+          .replace(/algorithm/gi, "process")
+          .replace(/automated/gi, "carefully crafted")
+          .replace(/\./g, ". Actually,");
+
+        await new Promise((res) => setTimeout(res, 1200));
+        setOutputText(simulatedOutput);
+        toast({
+          title: "Simulated humanization complete",
+          description: "This was a mock result since API is disabled.",
+        });
+      }
     } catch (error: any) {
       console.error("Error:", error);
       toast({ title: "Error", description: error.message });
@@ -153,7 +154,7 @@ const DemoSection = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 overflow-hidden rounded-lg">
             <Card className="shadow-sm border-r-0 lg:rounded-r-none">
               <CardHeader className="pb-4">
-                <CardTitle className="text-xl">Input: AI Text</CardTitle>
+                <CardTitle className="text-xl">Input Text</CardTitle>
               </CardHeader>
               <CardContent>
                 <Textarea
@@ -171,7 +172,7 @@ const DemoSection = () => {
 
             <Card className="shadow-sm border-l-0 lg:rounded-l-none">
               <CardHeader className="pb-4">
-                <CardTitle className="text-xl">Output: Humanized Text</CardTitle>
+                <CardTitle className="text-xl">Humanized Text</CardTitle>
               </CardHeader>
               <CardContent>
                 <Textarea
@@ -196,7 +197,11 @@ const DemoSection = () => {
             </Button>
 
             <p className="mt-5 text-base text-gray-500">
-              Free demo limited to {CHARACTER_LIMIT} characters. <a href="#pricing" className="text-primary underline hover:no-underline">Upgrade</a> for unlimited usage.
+              Free demo limited to {CHARACTER_LIMIT} characters.{" "}
+              <a href="#pricing" className="text-primary underline hover:no-underline">
+                Upgrade
+              </a>{" "}
+              for unlimited usage.
             </p>
           </div>
         </div>
