@@ -42,16 +42,19 @@ export type Database = {
       user_credits: {
         Row: {
           credits: number
+          has_used_free_plan: boolean | null
           last_updated: string | null
           user_id: string
         }
         Insert: {
           credits?: number
+          has_used_free_plan?: boolean | null
           last_updated?: string | null
           user_id: string
         }
         Update: {
           credits?: number
+          has_used_free_plan?: boolean | null
           last_updated?: string | null
           user_id?: string
         }

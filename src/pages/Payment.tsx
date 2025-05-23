@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,13 +52,13 @@ const Payment = () => {
 
       // Check if user already has used the free plan
       if (plan === "Free") {
-        const { data: userData, error } = await supabase
+        const { data: userData } = await supabase
           .from('user_credits')
           .select('has_used_free_plan')
           .eq('user_id', data.session.user.id)
           .single();
         
-        if (!error && userData && userData.has_used_free_plan) {
+        if (userData && userData.has_used_free_plan) {
           setAlreadyHasFreePlan(true);
         }
       }
