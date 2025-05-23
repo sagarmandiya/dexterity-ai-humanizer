@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { toast } from "@/components/ui/sonner";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const API_KEY = import.meta.env.VITE_UNDETECTABLE_API_KEY;
 const USER_ID = import.meta.env.VITE_UNDETECTABLE_USER_ID;
+const ENV_USE_API = import.meta.env.VITE_USE_API;
 
 const HumanizeText = () => {
   const navigate = useNavigate();
@@ -26,19 +27,20 @@ const HumanizeText = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [maxCharacters, setMaxCharacters] = useState(null);
 
+  // 🔁 Runtime override of USE_API
+  const [useAPI, setUseAPI] = useState(ENV_USE_API === "true");
+
   useEffect(() => {
     const fetchUserCredits = async () => {
       setIsLoading(true);
       try {
         const { data, error } = await supabase
-          .from('user_credits')
-          .select('credits')
+          .from("user_credits")
+          .select("credits")
           .single();
 
         if (error) throw error;
-        
         setUserCredits(data.credits);
-        // Set max characters based on credits
         setMaxCharacters(data.credits <= 0 ? 300 : null);
       } catch (error) {
         console.error("Error fetching user credits:", error);
@@ -55,7 +57,6 @@ const HumanizeText = () => {
   const handleInputChange = (e) => {
     const text = e.target.value;
     if (maxCharacters !== null && text.length > maxCharacters) {
-      // Truncate text to max characters
       setInputText(text.substring(0, maxCharacters));
     } else {
       setInputText(text);
@@ -74,74 +75,74 @@ const HumanizeText = () => {
     }
 
     setIsProcessing(true);
+    setOutputText("");
 
-    // Temporary Mock API Call
     try {
-      // TEMPORARY MOCKED OUTPUT
-      const simulatedOutput = inputText
-        .replace(/AI/gi, "artificial intelligence")
-        .replace(/algorithm/gi, "process")
-        .replace(/automated/gi, "carefully crafted")
-        .replace(/\./g, ". Actually,");
+      if (useAPI) {
+        const response = await fetch("https://humanize.undetectable.ai/submit", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: API_KEY,
+            user_id: USER_ID,
+          },
+          body: JSON.stringify({
+            content: inputText,
+            readability: "High School",
+            purpose: "Essay",
+            strength: "More Human",
+            model: "v11",
+          }),
+        });
 
-      await new Promise((res) => setTimeout(res, 1200));
-      setOutputText(simulatedOutput);
-    
-    // Uncomment for actual API call
-    // try {
-    //   const response = await fetch("https://humanize.undetectable.ai/submit", {
-    //     method: "POST",
-    //     headers: {
-    //       "Content-Type": "application/json",
-    //       apikey: API_KEY,
-    //       user_id: USER_ID
-    //     },
-    //     body: JSON.stringify({
-    //       content: inputText,
-    //       readability: "High School",
-    //       purpose: "Essay",
-    //       strength: "More Human",
-    //       model: "v11"
-    //     }),
-    //   });
+        const data = await response.json();
 
-    //   const data = await response.json();
+        if (!response.ok) {
+          console.error("🔴 API Error:", response.status, data);
+          if (data.error === "Insufficient credits") {
+            toast.error("You're out of credits. Please upgrade your plan.");
+            return;
+          }
+          throw new Error(data.message || "Submission failed");
+        }
 
-    //   if (!response.ok) {
-    //     console.error("🔴 API Error:", response.status, data);
-    //     if (data.error === "Insufficient credits") {
-    //       toast.error("You're out of credits. Please upgrade your plan.");
-    //       return;
-    //     }
-    //     throw new Error(data.message || "Submission failed");
-    //   }
+        if (!data.id) throw new Error("Submission failed");
 
-    //   if (!data.id) throw new Error("Submission failed");
+        let retries = 10;
+        let output = "";
+        while (retries-- > 0) {
+          const check = await fetch("https://humanize.undetectable.ai/document", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: API_KEY,
+              user_id: USER_ID,
+            },
+            body: JSON.stringify({ id: data.id }),
+          });
 
-    //   let retries = 10;
-    //   let output = "";
-    //   while (retries-- > 0) {
-    //     const check = await fetch("https://humanize.undetectable.ai/document", {
-    //       method: "POST",
-    //       headers: {
-    //         "Content-Type": "application/json",
-    //         apikey: API_KEY,
-    //         user_id: USER_ID
-    //       },
-    //       body: JSON.stringify({ id: data.id }),
-    //     });
+          const checkData = await check.json();
+          if (checkData.output) {
+            output = checkData.output;
+            break;
+          }
+          await new Promise((res) => setTimeout(res, 1000));
+        }
 
-    //     const checkData = await check.json();
-    //     if (checkData.output) {
-    //       output = checkData.output;
-    //       break;
-    //     }
-    //     await new Promise((res) => setTimeout(res, 1000));
-    //   }
+        if (!output) throw new Error("Humanization failed to complete in time.");
+        setOutputText(output);
+        toast.success("Text humanized successfully!");
+      } else {
+        const simulatedOutput = inputText
+          .replace(/AI/gi, "artificial intelligence")
+          .replace(/algorithm/gi, "process")
+          .replace(/automated/gi, "carefully crafted")
+          .replace(/\./g, ". Actually,");
 
-    //   if (!output) throw new Error("Humanization failed to complete in time.");
-
-    //   setOutputText(output);
+        await new Promise((res) => setTimeout(res, 1200));
+        setOutputText(simulatedOutput);
+        toast.success("Simulated humanization complete (API disabled).");
+      }
     } catch (error: any) {
       console.error("Humanize error:", error);
       toast.error(error.message || "Failed to humanize text.");
@@ -167,35 +168,30 @@ const HumanizeText = () => {
         return;
       }
 
-      const { data: projectData, error: projectError } = await supabase
-        .from('projects')
+      const { error: projectError } = await supabase
+        .from("projects")
         .insert({
           title,
           input_text: inputText,
           output_text: outputText,
           credits_used: creditsUsed,
-          user_id: (await supabase.auth.getUser()).data.user?.id
+          user_id: (await supabase.auth.getUser()).data.user?.id,
         })
         .select();
 
       if (projectError) throw projectError;
 
-      const { error: creditError } = await supabase.rpc(
-        'decrement_user_credits',
-        { amount: creditsUsed }
-      );
+      const { error: creditError } = await supabase.rpc("decrement_user_credits", {
+        amount: creditsUsed,
+      });
 
       if (creditError) {
         console.error("Failed to update credits:", creditError);
         toast.error("Project saved but failed to update credits.");
       } else {
-        // Update local credits state
-        setUserCredits(prevCredits => {
-          const newCredits = Math.max(0, prevCredits - creditsUsed);
-          // Update max characters if credits are now zero
-          if (newCredits <= 0) {
-            setMaxCharacters(300);
-          }
+        setUserCredits((prev) => {
+          const newCredits = Math.max(0, prev - creditsUsed);
+          if (newCredits <= 0) setMaxCharacters(300);
           return newCredits;
         });
         toast.success("Project saved successfully!");
@@ -229,11 +225,18 @@ const HumanizeText = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Navigation />
-      <div className="flex-1 bg-slate-50 p-4">
+      <div className="flex-1 bg-slate-50 p-4 pt-24">
         <div className="container mx-auto py-8 max-w-4xl">
-          <Button variant="ghost" className="mb-6" onClick={() => navigate('/dashboard')}>
-            ← Back to Dashboard
-          </Button>
+          <div className="flex items-center justify-between mb-6">
+            <Button variant="ghost" onClick={() => navigate("/dashboard")}>
+              ← Back to Dashboard
+            </Button>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>Use Live API</span>
+              <Switch checked={useAPI} onCheckedChange={setUseAPI} />
+            </div>
+          </div>
+
           <Card>
             <CardHeader>
               <CardTitle className="text-2xl">Humanize Text</CardTitle>
@@ -243,13 +246,18 @@ const HumanizeText = () => {
                 <Alert variant="destructive" className="mb-4">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    You're out of credits! Input is limited to 300 characters. 
-                    <a href="/pricing" className="ml-1 underline">Upgrade your plan</a> to remove this limitation.
+                    You're out of credits! Input is limited to 300 characters.
+                    <a href="/pricing" className="ml-1 underline">
+                      Upgrade your plan
+                    </a>
+                    .
                   </AlertDescription>
                 </Alert>
               )}
               <div>
-                <label htmlFor="title" className="block mb-2 text-sm font-medium">Project Title</label>
+                <label htmlFor="title" className="block mb-2 text-sm font-medium">
+                  Project Title
+                </label>
                 <Input
                   id="title"
                   value={title}
@@ -274,16 +282,15 @@ const HumanizeText = () => {
                 </div>
               </div>
               <div className="text-center">
-                <Button
-                  onClick={handleHumanize}
-                  disabled={isProcessing || !inputText.trim()}
-                >
+                <Button onClick={handleHumanize} disabled={isProcessing || !inputText.trim()}>
                   {isProcessing ? "Processing..." : "Humanize"}
                 </Button>
               </div>
               {outputText && (
                 <div className="mt-4">
-                  <label htmlFor="output-text" className="block mb-2 text-sm font-medium">Humanized Text</label>
+                  <label htmlFor="output-text" className="block mb-2 text-sm font-medium">
+                    Humanized Text
+                  </label>
                   <Textarea
                     id="output-text"
                     className="min-h-[150px] bg-slate-50"
@@ -307,10 +314,7 @@ const HumanizeText = () => {
                 >
                   Copy Text
                 </Button>
-                <Button
-                  onClick={saveProject}
-                  disabled={isSubmitting}
-                >
+                <Button onClick={saveProject} disabled={isSubmitting}>
                   {isSubmitting ? "Saving..." : "Save Project"}
                 </Button>
               </CardFooter>
