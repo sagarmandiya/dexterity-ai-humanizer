@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu } from "lucide-react";
+import { Menu, LogIn, User } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -30,6 +30,11 @@ const Navigation = () => {
     }
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/");
+  };
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -55,12 +60,25 @@ const Navigation = () => {
           <Link to="/pricing" className="text-sm font-medium hover:text-primary transition-colors">
             Pricing
           </Link>
+          
           {user ? (
-            <Button onClick={handleAuthAction} size="sm">
-              Dashboard
-            </Button>
+            <>
+              <Link to="/humanize" className="text-sm font-medium hover:text-primary transition-colors">
+                Humanize Text
+              </Link>
+              <div className="flex items-center gap-4">
+                <Link to="/dashboard" className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors">
+                  <User className="h-4 w-4" />
+                  Dashboard
+                </Link>
+                <Button onClick={handleLogout} variant="outline" size="sm">
+                  Logout
+                </Button>
+              </div>
+            </>
           ) : (
             <Button onClick={handleAuthAction} size="sm">
+              <LogIn className="mr-2 h-4 w-4" />
               Login / Sign Up
             </Button>
           )}
@@ -107,17 +125,46 @@ const Navigation = () => {
             >
               Pricing
             </Link>
-            <div className="pt-2">
+            
+            {user ? (
+              <>
+                <Link
+                  to="/humanize"
+                  className="text-sm font-medium hover:text-primary transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Humanize Text
+                </Link>
+                <Link
+                  to="/dashboard"
+                  className="text-sm font-medium hover:text-primary transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Dashboard
+                </Link>
+                <Button 
+                  onClick={() => {
+                    handleLogout();
+                    setIsMenuOpen(false);
+                  }}
+                  variant="outline"
+                  className="w-full"
+                >
+                  Logout
+                </Button>
+              </>
+            ) : (
               <Button 
                 onClick={() => {
                   handleAuthAction();
                   setIsMenuOpen(false);
-                }} 
+                }}
                 className="w-full"
               >
-                {user ? "Dashboard" : "Login / Sign Up"}
+                <LogIn className="mr-2 h-4 w-4" />
+                Login / Sign Up
               </Button>
-            </div>
+            )}
           </nav>
         </div>
       )}
