@@ -110,11 +110,26 @@ const Payment = () => {
     
     try {
       // If user already has free plan and tries to get it again, show error
-      if (plan === "Free" && alreadyHasFreePlan) {
-        toast.error("You have already used the free plan for this account.");
-        setIsLoading(false);
-        return;
+      if (plan === "Free") {
+        const { data: latestUserCredits, error: checkError } = await supabase
+          .from('user_credits')
+          .select('has_used_free_plan')
+          .eq('user_id', user.id)
+          .single();
+
+        if (checkError) {
+          toast.error("Failed to verify your free plan status.");
+          setIsLoading(false);
+          return;
+        }
+
+        if (latestUserCredits?.has_used_free_plan) {
+          toast.error("You have already used the free plan.");
+          setIsLoading(false);
+          return;
+        }
       }
+
 
       // This would be a payment processor integration in a real app
       // For now, we'll simulate payment success and credit the user
