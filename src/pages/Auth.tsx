@@ -99,7 +99,8 @@ const AuthPage = () => {
         // If no record exists, create one with default credits
         await supabase.from('user_credits').insert({
           user_id: userId,
-          credits: 50
+          credits: 50,
+          has_used_free_plan: false
         });
       }
     } catch (error) {

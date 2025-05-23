@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
-import { CreditCard, CheckCircle, ArrowLeft } from "lucide-react";
+import { CreditCard, CheckCircle, ArrowLeft, AlertCircle } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 
@@ -16,6 +16,7 @@ const Payment = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [alreadyHasFreePlan, setAlreadyHasFreePlan] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -49,10 +50,23 @@ const Payment = () => {
           email: data.session.user.email
         }));
       }
+
+      // Check if user already has used the free plan
+      if (plan === "Free") {
+        const { data: userData, error } = await supabase
+          .from('user_credits')
+          .select('has_used_free_plan')
+          .eq('user_id', data.session.user.id)
+          .single();
+        
+        if (!error && userData && userData.has_used_free_plan) {
+          setAlreadyHasFreePlan(true);
+        }
+      }
     };
     
     checkAuth();
-  }, [navigate]);
+  }, [navigate, plan]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -96,6 +110,13 @@ const Payment = () => {
     setIsLoading(true);
     
     try {
+      // If user already has free plan and tries to get it again, show error
+      if (plan === "Free" && alreadyHasFreePlan) {
+        toast.error("You have already used the free plan for this account.");
+        setIsLoading(false);
+        return;
+      }
+
       // This would be a payment processor integration in a real app
       // For now, we'll simulate payment success and credit the user
       
@@ -105,14 +126,21 @@ const Payment = () => {
         await new Promise(resolve => setTimeout(resolve, 1500));
       }
       
-      // Add credits to user account
+      // Update user_credits table
+      const updateData: any = {
+        user_id: user.id,
+        credits: credits,
+        last_updated: new Date().toISOString()
+      };
+      
+      // If it's the free plan, mark it as used
+      if (plan === "Free") {
+        updateData.has_used_free_plan = true;
+      }
+      
       const { error } = await supabase
         .from('user_credits')
-        .upsert({
-          user_id: user.id,
-          credits: credits,
-          last_updated: new Date().toISOString()
-        }, {
+        .upsert(updateData, {
           onConflict: 'user_id'
         });
       
@@ -134,10 +162,10 @@ const Payment = () => {
 
   // If price is free, auto-submit
   useEffect(() => {
-    if (price === "$0" && user?.id) {
+    if (price === "$0" && user?.id && !alreadyHasFreePlan) {
       handleSubmit(new Event('submit') as any);
     }
-  }, [price, user]);
+  }, [price, user, alreadyHasFreePlan]);
 
   if (!user) return null;
 
@@ -165,104 +193,122 @@ const Payment = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="mb-5 p-3 bg-gray-50 rounded-md text-center">
-                  <span className="text-xl font-bold text-primary">{credits}</span>
-                  <span className="text-gray-600"> credits will be added to your account</span>
-                </div>
-                
-                {price !== "$0" ? (
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Name on card</Label>
-                      <Input 
-                        id="name" 
-                        name="name" 
-                        placeholder="John Smith" 
-                        value={formData.name} 
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input 
-                        id="email" 
-                        name="email" 
-                        type="email" 
-                        value={formData.email} 
-                        onChange={handleInputChange}
-                        required
-                        readOnly
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="cardNumber">Card number</Label>
-                      <div className="relative">
-                        <Input 
-                          id="cardNumber" 
-                          name="cardNumber" 
-                          placeholder="1234 5678 9012 3456" 
-                          value={formData.cardNumber}
-                          onChange={handleCardNumberChange}
-                          required
-                          className="pl-10"
-                        />
-                        <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="expiry">Expiry date</Label>
-                        <Input 
-                          id="expiry" 
-                          name="expiry" 
-                          placeholder="MM/YY" 
-                          value={formData.expiry}
-                          onChange={handleExpiryChange}
-                          required
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="cvc">CVC</Label>
-                        <Input 
-                          id="cvc" 
-                          name="cvc" 
-                          placeholder="123" 
-                          maxLength={3}
-                          value={formData.cvc}
-                          onChange={handleInputChange}
-                          required
-                        />
-                      </div>
-                    </div>
-                    
-                    <Button 
-                      type="submit" 
-                      className="w-full" 
-                      disabled={isLoading}
-                    >
-                      {isLoading ? "Processing..." : `Subscribe for ${price}/month`}
-                    </Button>
-                  </form>
-                ) : (
+                {alreadyHasFreePlan && plan === "Free" ? (
                   <div className="text-center py-4">
-                    <div className="mx-auto w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-4">
-                      <CheckCircle className="h-6 w-6 text-green-600" />
+                    <div className="mx-auto w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mb-4">
+                      <AlertCircle className="h-6 w-6 text-amber-600" />
                     </div>
-                    <h3 className="text-lg font-medium mb-2">Free Plan Selected</h3>
-                    <p className="text-gray-500 mb-4">Your account will be credited with {credits} credits.</p>
+                    <h3 className="text-lg font-medium mb-2">Free Plan Already Used</h3>
+                    <p className="text-gray-500 mb-4">You've already activated the free plan on this account. Please choose a different plan.</p>
                     <Button 
-                      onClick={handleSubmit}
-                      className="w-full" 
-                      disabled={isLoading}
+                      onClick={() => navigate("/pricing")}
+                      className="w-full"
                     >
-                      {isLoading ? "Processing..." : "Activate Free Plan"}
+                      Return to Pricing
                     </Button>
                   </div>
+                ) : (
+                  <>
+                    <div className="mb-5 p-3 bg-gray-50 rounded-md text-center">
+                      <span className="text-xl font-bold text-primary">{credits}</span>
+                      <span className="text-gray-600"> credits will be added to your account</span>
+                    </div>
+                    
+                    {price !== "$0" ? (
+                      <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="name">Name on card</Label>
+                          <Input 
+                            id="name" 
+                            name="name" 
+                            placeholder="John Smith" 
+                            value={formData.name} 
+                            onChange={handleInputChange}
+                            required
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="email">Email</Label>
+                          <Input 
+                            id="email" 
+                            name="email" 
+                            type="email" 
+                            value={formData.email} 
+                            onChange={handleInputChange}
+                            required
+                            readOnly
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="cardNumber">Card number</Label>
+                          <div className="relative">
+                            <Input 
+                              id="cardNumber" 
+                              name="cardNumber" 
+                              placeholder="1234 5678 9012 3456" 
+                              value={formData.cardNumber}
+                              onChange={handleCardNumberChange}
+                              required
+                              className="pl-10"
+                            />
+                            <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="expiry">Expiry date</Label>
+                            <Input 
+                              id="expiry" 
+                              name="expiry" 
+                              placeholder="MM/YY" 
+                              value={formData.expiry}
+                              onChange={handleExpiryChange}
+                              required
+                            />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label htmlFor="cvc">CVC</Label>
+                            <Input 
+                              id="cvc" 
+                              name="cvc" 
+                              placeholder="123" 
+                              maxLength={3}
+                              value={formData.cvc}
+                              onChange={handleInputChange}
+                              required
+                            />
+                          </div>
+                        </div>
+                        
+                        <Button 
+                          type="submit" 
+                          className="w-full" 
+                          disabled={isLoading}
+                        >
+                          {isLoading ? "Processing..." : `Subscribe for ${price}/month`}
+                        </Button>
+                      </form>
+                    ) : (
+                      <div className="text-center py-4">
+                        <div className="mx-auto w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-4">
+                          <CheckCircle className="h-6 w-6 text-green-600" />
+                        </div>
+                        <h3 className="text-lg font-medium mb-2">Free Plan Selected</h3>
+                        <p className="text-gray-500 mb-4">Your account will be credited with {credits} credits.</p>
+                        <Button 
+                          onClick={handleSubmit}
+                          className="w-full" 
+                          disabled={isLoading}
+                        >
+                          {isLoading ? "Processing..." : "Activate Free Plan"}
+                        </Button>
+                      </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>
