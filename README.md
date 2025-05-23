@@ -2,7 +2,7 @@
 
 **AI Humanizer** is a web application that transforms AI-generated text into more natural, human-like content. Users can specify readability level, purpose, and strength of transformation to suit their needs.
 
-🔗 **Live Demo**: [dexterity-ai-humanizer.lovable.app](https://dexterity-ai-humanizer.lovable.app/)
+🔗 **Live Demo**: [dexterityhumanizer.netlify.app](https://dexterityhumanizer.netlify.app/)
 
 ---
 
@@ -60,7 +60,6 @@ VITE_USE_API=true
 ```
 
 ### 4. Run the Applicaton
-- Create a .env.local file in project root
 
 ```bash
 npm run dev
