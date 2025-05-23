@@ -72,7 +72,7 @@ const ProjectView = () => {
     <div className="min-h-screen flex flex-col">
       <Navigation />
       
-      <div className="flex-1 bg-slate-50 p-4">
+      <div className="flex-1 bg-slate-50 p-4 pt-24">
         <div className="container mx-auto py-8 max-w-4xl">
           <Button 
             variant="ghost" 
