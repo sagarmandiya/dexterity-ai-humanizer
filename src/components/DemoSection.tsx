@@ -4,6 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowRight } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const API_KEY = import.meta.env.VITE_UNDETECTABLE_API_KEY;
 const USER_ID = import.meta.env.VITE_UNDETECTABLE_USER_ID;
@@ -14,9 +15,33 @@ const DemoSection = () => {
   const [inputText, setInputText] = useState("");
   const [outputText, setOutputText] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [user, setUser] = useState(null);
+  const [userCredits, setUserCredits] = useState(0);
   const { toast } = useToast();
 
   useEffect(() => {
+    // Check if user is logged in and get their credits
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      
+      if (user) {
+        try {
+          const { data, error } = await supabase
+            .from("user_credits")
+            .select("credits")
+            .eq("user_id", user.id)
+            .single();
+          
+          if (error) throw error;
+          setUserCredits(data.credits);
+        } catch (error) {
+          console.error("Error fetching user credits:", error);
+        }
+      }
+    };
+
+    checkUser();
     setTimeout(() => setInputText(""), 0);
   }, []);
 
@@ -48,10 +73,17 @@ const DemoSection = () => {
       return;
     }
 
-    // if (!API_KEY || !USER_ID) {
-    //   toast({ title: "API credentials missing." });
-    //   return;
-    // }
+    // Calculate credits needed for this operation
+    const creditsNeeded = Math.max(1, Math.floor(inputText.length / 100));
+    
+    // Check if user has enough credits (only for logged in users)
+    if (user && userCredits < creditsNeeded) {
+      toast({
+        title: "Insufficient credits",
+        description: "You don't have enough credits to humanize this text. Please upgrade your plan.",
+      });
+      return;
+    }
 
     setIsProcessing(true);
     setOutputText("");
@@ -105,9 +137,31 @@ const DemoSection = () => {
           const pollData = await pollRes.json();
           if (pollData.output) {
             setOutputText(pollData.output);
+            
+            // Deduct credits for logged in users after successful humanization
+            if (user) {
+              try {
+                const { error: creditError } = await supabase.rpc("decrement_user_credits", {
+                  amount: creditsNeeded,
+                });
+
+                if (creditError) {
+                  console.error("Failed to update credits:", creditError);
+                  toast({
+                    title: "Warning",
+                    description: "Text humanized but failed to update credits.",
+                  });
+                } else {
+                  setUserCredits(prev => Math.max(0, prev - creditsNeeded));
+                }
+              } catch (error) {
+                console.error("Credit deduction error:", error);
+              }
+            }
+
             toast({
               title: "Text humanized successfully!",
-              description: "Your AI-generated text now sounds more natural.",
+              description: user ? `${creditsNeeded} credits deducted.` : "Your AI-generated text now sounds more natural.",
             });
             return;
           }
@@ -125,9 +179,31 @@ const DemoSection = () => {
 
         await new Promise((res) => setTimeout(res, 1200));
         setOutputText(simulatedOutput);
+
+        // Deduct credits for logged in users after successful simulation
+        if (user) {
+          try {
+            const { error: creditError } = await supabase.rpc("decrement_user_credits", {
+              amount: creditsNeeded,
+            });
+
+            if (creditError) {
+              console.error("Failed to update credits:", creditError);
+              toast({
+                title: "Warning",
+                description: "Text humanized but failed to update credits.",
+              });
+            } else {
+              setUserCredits(prev => Math.max(0, prev - creditsNeeded));
+            }
+          } catch (error) {
+            console.error("Credit deduction error:", error);
+          }
+        }
+
         toast({
           title: "Simulated humanization complete",
-          description: "This was a mock result since API is disabled.",
+          description: user ? `${creditsNeeded} credits deducted. This was a mock result since API is disabled.` : "This was a mock result since API is disabled.",
         });
       }
     } catch (error: any) {
@@ -149,6 +225,11 @@ const DemoSection = () => {
             <p className="text-lg text-gray-600">
               Paste your AI-generated text below and see the difference.
             </p>
+            {user && (
+              <p className="text-sm text-gray-500 mt-2">
+                Credits remaining: {userCredits}
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 overflow-hidden rounded-lg">

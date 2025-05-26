@@ -68,6 +68,14 @@ const HumanizeText = () => {
       toast.error("Please enter at least 50 characters.");
       return;
     }
+
+    // Calculate credits needed and check if user has enough
+    const creditsNeeded = Math.max(1, Math.floor(inputText.length / 100));
+    if (userCredits < creditsNeeded) {
+      toast.error("You don't have enough credits to humanize this text. Please upgrade your plan.");
+      return;
+    }
+
     setIsProcessing(true);
     setOutputText("");
 
@@ -90,8 +98,6 @@ const HumanizeText = () => {
         });
 
         const data = await response.json();
-        // if (!response.ok) throw new Error(data.message || "Submission failed");
-        // if (!data.id) throw new Error("Submission failed");
         if (!response.ok) {
           console.error("🔴 API Error:", response.status, data);
           if (data.error === "Insufficient credits") {
@@ -125,20 +131,52 @@ const HumanizeText = () => {
 
         if (!output) throw new Error("Humanization failed to complete in time.");
         setOutputText(output);
-        toast.success("Text humanized successfully!");
-      } else {
-          // Simulated humanization (used when API is disabled or unavailable for assessment)
-          const simulatedOutput = inputText
-            .replace(/\bAI\b/gi, "advanced machine intelligence")
-            .replace(/\balgorithm\b/gi, "computational method")
-            .replace(/\bautomated\b/gi, "carefully engineered")
-            .replace(/\bgenerate\b/gi, "construct")
-            .replace(/([.?!])\s+(?=[A-Z])/g, "$1 Indeed, "); // optional: adds subtle human tone
-          
-          await new Promise((res) => setTimeout(res, 1000));
-          setOutputText(simulatedOutput);
-          toast.success("Simulated humanization complete (API disabled for assessment).");
+
+        // Deduct credits after successful humanization
+        const { error: creditError } = await supabase.rpc("decrement_user_credits", {
+          amount: creditsNeeded,
+        });
+
+        if (creditError) {
+          console.error("Failed to update credits:", creditError);
+          toast.error("Text humanized but failed to update credits.");
+        } else {
+          setUserCredits(prev => {
+            const newCredits = Math.max(0, prev - creditsNeeded);
+            if (newCredits <= 0) setMaxCharacters(300);
+            return newCredits;
+          });
+          toast.success(`Text humanized successfully! ${creditsNeeded} credits deducted.`);
         }
+      } else {
+        // Simulated humanization (used when API is disabled or unavailable for assessment)
+        const simulatedOutput = inputText
+          .replace(/\bAI\b/gi, "advanced machine intelligence")
+          .replace(/\balgorithm\b/gi, "computational method")
+          .replace(/\bautomated\b/gi, "carefully engineered")
+          .replace(/\bgenerate\b/gi, "construct")
+          .replace(/([.?!])\s+(?=[A-Z])/g, "$1 Indeed, "); // optional: adds subtle human tone
+        
+        await new Promise((res) => setTimeout(res, 1000));
+        setOutputText(simulatedOutput);
+
+        // Deduct credits after successful simulation
+        const { error: creditError } = await supabase.rpc("decrement_user_credits", {
+          amount: creditsNeeded,
+        });
+
+        if (creditError) {
+          console.error("Failed to update credits:", creditError);
+          toast.error("Text humanized but failed to update credits.");
+        } else {
+          setUserCredits(prev => {
+            const newCredits = Math.max(0, prev - creditsNeeded);
+            if (newCredits <= 0) setMaxCharacters(300);
+            return newCredits;
+          });
+          toast.success(`Simulated humanization complete! ${creditsNeeded} credits deducted (API disabled for assessment).`);
+        }
+      }
     } catch (error) {
       toast.error(error.message || "Failed to humanize text.");
     } finally {
@@ -154,41 +192,21 @@ const HumanizeText = () => {
 
     setIsSubmitting(true);
     try {
-      const creditsUsed = Math.max(1, Math.floor(inputText.length / 100));
-      if (userCredits < creditsUsed) {
-        toast.error("You don't have enough credits to save this project.");
-        setIsSubmitting(false);
-        return;
-      }
-
+      // No credits deduction here since it was already done during humanization
       const { error: projectError } = await supabase
         .from("projects")
         .insert({
           title,
           input_text: inputText,
           output_text: outputText,
-          credits_used: creditsUsed,
+          credits_used: Math.max(1, Math.floor(inputText.length / 100)), // For record keeping
           user_id: (await supabase.auth.getUser()).data.user?.id,
         })
         .select();
 
       if (projectError) throw projectError;
 
-      const { error: creditError } = await supabase.rpc("decrement_user_credits", {
-        amount: creditsUsed,
-      });
-
-      if (creditError) {
-        toast.error("Project saved but failed to update credits.");
-      } else {
-        setUserCredits((prev) => {
-          const newCredits = Math.max(0, prev - creditsUsed);
-          if (newCredits <= 0) setMaxCharacters(300);
-          return newCredits;
-        });
-        toast.success("Project saved successfully!");
-      }
-
+      toast.success("Project saved successfully!");
       navigate("/dashboard");
     } catch (error) {
       toast.error(error.message || "Failed to save project.");
@@ -222,9 +240,12 @@ const HumanizeText = () => {
             <Button variant="ghost" onClick={() => navigate("/dashboard")}>
               ← Back to Dashboard
             </Button>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>Use Live API</span>
-              <Switch checked={useAPI} onCheckedChange={setUseAPI} />
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-muted-foreground">Credits: {userCredits}</span>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>Use Live API</span>
+                <Switch checked={useAPI} onCheckedChange={setUseAPI} />
+              </div>
             </div>
           </div>
 
