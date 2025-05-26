@@ -22,6 +22,7 @@ This tool integrates with the [Undetectable.ai Humanizer API (v2)](https://help.
 - **Fallback Simulation** when API access is unavailable
 - **Save Projects** including input/output and usage metrics
 - **Credit-Based Usage** via Supabase integration
+- **Premium Subscription** with dynamic credits management
 
 ---
 
