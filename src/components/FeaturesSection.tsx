@@ -16,8 +16,8 @@ const features = [
     description: "Adds natural variations, colloquialisms, and human speech patterns that AI typically lacks."
   },
   {
-    title: "Multiple Language Support",
-    description: "Supports humanization across multiple languages including English, Spanish, French, and more."
+    title: "Tone Adjustment",
+    description: "Customize the tone of your humanized text with premium plans - from professional to casual, academic to conversational."
   },
   {
     title: "Grammar Preservation",
